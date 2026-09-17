@@ -1,0 +1,7 @@
+# Lab 3 — vision. Python 3.12, native install, no container:
+#   python3 -m venv .venv && pip install -r requirements.txt
+# Every package here has a macosx_*_arm64 wheel.
+numpy
+opencv-python
+scikit-image
+scikit-learn         # for the learned option your assignment asks for

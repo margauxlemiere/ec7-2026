@@ -1,0 +1,7 @@
+{
+  "width": 640,
+  "height": 480,
+  "focal_px": 530.0,
+  "camera_height_m": 0.18,
+  "note": "this set is rendered, so the focal length is exact. Your own camera is not this one: --input device needs you to measure it. The real size of each target is on the printed sheet."
+}

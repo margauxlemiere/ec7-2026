@@ -1,0 +1,7 @@
+{
+  "cylinder_ink_height_mm": 201.5,
+  "cylinder_paper_height_mm": 210.0,
+  "sign_diameter_mm": 150.0,
+  "source": "markers.pdf printed on A4 landscape, road-signs.pdf on A4",
+  "note": "the cylinder value is the printed band, measured on the PDF at 150 dpi. Measure the one you printed before you trust it."
+}
