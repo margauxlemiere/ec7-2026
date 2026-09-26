@@ -43,3 +43,10 @@ Options comparées :
 | B — ASR local + règles | +55 |
 | C — API cloud | −51 |
 
+
+
+
+## Recommandation
+
+L'option A domine le score pondéré (+62 contre +55 pour B et −51 pour C), principalement parce qu'elle gagne sur les deux critères les plus lourds du cas : la latence et le déploiement/souveraineté. Elle tient aussi la promesse d'explicabilité exigée par le superviseur et ne transmet jamais les conversations non adressées captées par le micro ouvert. Sa faiblesse réelle est la robustesse : une grammaire de vingt formulations ne couvrira pas toutes les façons de demander la même chose. Le risque se compense en élargissant progressivement la liste de formulations à partir des échecs observés, sans changer d'architecture. Je retiens donc A comme choix par défaut, avec B comme option de repli si la couverture de vingt formulations s'avère trop étroite à l'usage.
+
