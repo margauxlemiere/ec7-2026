@@ -1,19 +1,25 @@
 ## The specification
-## Quetion 1.	
-Who talks to it: Any visitor walking through the entrance hall and addressing directly to the robot — no login, no prior relationship.  
-Who does not talk to it: Non visitors (staff) because they already know the building and unaddressed conversations (background noise, conversation between visitors …) which must not trigger an action from the robot
-## Quetion 2.	
-Positioned near the entrance of a public building  
-o	Unaddressed conversations around (conversation between visitors, …)   
-o	Glass ceiling → Echo, reverberation and intense natural light   
-o	Background noise (coffee machine nearby → High-frequency noise   
-→ Degraded audio input + Potential screen visibility issues (display)  
-## Quetion 3.	
-Input = voice   
-Output = Visual acknowledgment showing that the robot is listening (< 1 s) +   
- o	Room-location & office-hours queries = short audio answer + a map/arrow   
- o	Call-a-human-agent = separate message to a human agent (not shown to the visitor) + audio confirmation to the visitor    
-## Quetion 4.	
-1. The acknowledgment must arrive in less than one second, otherwise the person repeats themselves and two voices overlap  
-2. IT blocks all outgoing traffic to an unapproved service, and approval takes a month — which eliminates any option depending on an external service that is not pre-approved at the time of installation  
-3. Failing to call a human when requested is what causes the robot to be turned off — which eliminates any option whose recognition of this intent is not reliable.
+
+## 1
+Qui lui parle : tout visiteur qui traverse le hall d'entrée et s'adresse directement au robot — pas de connexion, pas de relation préalable.  
+Qui ne lui parle pas : les non-visiteurs (le personnel), car ils connaissent déjà le bâtiment, et les conversations non adressées (bruit de fond, discussions entre visiteurs, etc.) qui ne doivent déclencher aucune action de la part du robot.
+
+## 2  
+Positionné près de l'entrée d'un bâtiment public :   
+
+Conversations non adressées alentour (discussions entre visiteurs, …)  
+Plafond vitré → écho, réverbération et forte lumière naturelle  
+Bruit de fond (machine à café à proximité) → bruit haute fréquence  
+
+→ Entrée audio dégradée + problèmes potentiels de visibilité de l'écran (affichage)  
+
+## 3
+Entrée = voix   
+Sortie = accusé de réception visuel montrant que le robot écoute (< 1 s) +  
+             Questions sur la localisation d'une salle / les horaires du bureau = réponse audio courte + une carte/flèche  
+             Appel à un agent humain = message séparé envoyé à un agent humain (non affiché au visiteur) + confirmation audio au visiteur  
+
+## 4
+- L'accusé de réception doit arriver en moins d'une seconde, sinon la personne se répète et deux voix se superposent  
+- Le service informatique bloque tout trafic sortant vers un service non approuvé, et l'approbation prend un mois — ce qui élimine toute option dépendant d'un service externe non pré-approuvé au moment de l'installation  
+- Ne pas réussir à appeler un humain quand cela est demandé est ce qui fait éteindre le robot — ce qui élimine toute option dont la reconnaissance de cette intention n'est pas fiable.  
