@@ -52,3 +52,11 @@ Options comparées :
 
 L'option A domine le score pondéré (+62 contre +55 pour B et −51 pour C), principalement parce qu'elle gagne sur les deux critères les plus lourds du cas : la latence et le déploiement/souveraineté. Elle tient aussi la promesse d'explicabilité exigée par le superviseur et ne transmet jamais les conversations non adressées captées par le micro ouvert. Sa faiblesse réelle est la robustesse : une grammaire de vingt formulations ne couvrira pas toutes les façons de demander la même chose. Le risque se compense en élargissant progressivement la liste de formulations à partir des échecs observés, sans changer d'architecture. Je retiens donc A comme choix par défaut, avec B comme option de repli si la couverture de vingt formulations s'avère trop étroite à l'usage.
 
+## Knock-out
+
+Critère knock-out retenu : **déploiement/souveraineté** — toute option nécessitant un trafic sortant vers un service non approuvé est éliminée, car le service informatique met un mois à approuver un nouveau service, délai incompatible avec l'installation du robot.
+
+Ce knock-out élimine l'option **C**. Comme A a déjà le meilleur score pondéré, la sentence retenue est :
+
+> **« Je retiens l'option A, et j'accepte un vocabulaire fermé de vingt formulations (pas de langage ouvert) afin d'obtenir une réponse sans aucune dépendance à une approbation externe et un accusé de réception sous la seconde. »**
+
