@@ -60,3 +60,17 @@ Ce knock-out élimine l'option **C**. Comme A a déjà le meilleur score pondér
 
 > **« Je retiens l'option A, et j'accepte un vocabulaire fermé de vingt formulations (pas de langage ouvert) afin d'obtenir une réponse sans aucune dépendance à une approbation externe et un accusé de réception sous la seconde. »**
 
+## The context moves
+
+*Le bâtiment est remplacé par une application mobile grand public. Mêmes trois types de question, mêmes trois options. Pas de hall, pas de service informatique, un million d'utilisateurs.*
+
+**1. Quel poids bouge en premier, et pourquoi ?**
+Le poids de « déploiement et souveraineté » chute en premier, car le fait qui lui donnait un poids de 5 — un service informatique de deux personnes bloquant tout trafic sortant non approuvé, avec un mois d'approbation — n'existe plus du tout dans une application grand public sans service informatique.
+
+**2. Le gagnant change-t-il ? Si oui, quel critère a fait basculer le classement ?**
+Oui, il change. Une fois la contrainte de souveraineté disparue, c'est la **robustesse** qui fait basculer le classement : une grammaire fermée de vingt formulations ne peut pas couvrir la variété de formulations d'un million d'utilisateurs, alors qu'un modèle hébergé, entraîné sur des données massives et variées, généralise mieux à cette échelle. L'option C devient compétitive lorsque le contexte change.
+
+**3. Laquelle de vos trois contraintes survit au changement de contexte, laquelle cesse d'exister ?**
+La contrainte de latence (accusé de réception sous la seconde) **survit** : un utilisateur d'application mobile attend toujours une réaction rapide. La contrainte de blocage du trafic sortant par le service informatique **cesse d'exister**, puisqu'il n'y a plus de service informatique ni de règle d'approbation dans ce contexte ; un envoi vers un service cloud devient la norme attendue plutôt qu'une exception à approuver.
+
+
