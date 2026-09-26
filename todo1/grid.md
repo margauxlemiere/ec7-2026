@@ -43,7 +43,9 @@ Options comparées :
 | B — ASR local + règles | +55 |
 | C — API cloud | −51 |
 
+## Radar
 
+<img width="1276" height="928" alt="image" src="https://github.com/user-attachments/assets/858de20c-4141-46cb-8131-25e0065728cc" />
 
 
 ## Recommandation
