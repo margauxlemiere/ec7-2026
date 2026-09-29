@@ -3,10 +3,14 @@
 # 1. IA générative 
 Outil : Gemini 3.6 Flash
 Pour quels éléments : 
-- Pour comprendre l'environnement Git/GitHub et m'y former 
+- Pour comprendre l'environnement Git/GitHub et m'y former
+- Pour faire des calculs simples
+- Pour comprendre certaines consignes
+- Pour faire de la traduction
 Comment :
-- Je lui ai demandé de me générer les commandes à écrire sur le terminal Git Bash via l'IDE VS Code
+- Je lui ai demandé de me générer les commandes à écrire sur le terminal pour créer mon environnement de travail (repository, ...)
 - Je lui ai envoyé des captures d'écran de mes bugs pour comprendre le problème et trouver une solution
+- Je lui ai demandé de m'expliquer les consignes du devoir quand je ne les avais pas comprises
 Ce que j'ai vérifié :
 - J'ai exécuté les commandes qu'ils me donnaient et vérifier qu'elles faisaient bien l'action demandée
 - J'ai aussi regardé les vidéos de Marie Développe pour avoir plus de connaissances sur le sujet et pouvoir avoir un esprit critique
