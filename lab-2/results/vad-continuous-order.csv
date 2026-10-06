@@ -1,0 +1,8 @@
+speech,condition,n,start_error_ms,end_error_ms,clipped,no_answer
+continuous,clean,60,5.8,7.2,0,0
+continuous,snr30,60,15.5,42.0,10,0
+continuous,snr20,60,27.2,74.1,25,0
+continuous,snr10,60,38.5,188.3,49,0
+continuous,snr5,60,34.0,323.8,56,0
+continuous,snr0,60,59.4,529.9,55,0
+continuous,snrm5,50,206.2,942.4,45,10
