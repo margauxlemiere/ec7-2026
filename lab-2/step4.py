@@ -45,7 +45,7 @@ from faster_whisper import WhisperModel
 # Which one? This model has to run on the robot's CPU. The open ASR
 # leaderboard, in the reading list of this session, compares their word error
 # rate and their speed.
-MODEL_SIZE = None  # TODO: a text, for example "base.en". Start small.
+MODEL_SIZE = "tiny.en"  # TODO: a text, for example "base.en". Start small.
 
 # The loaded model. None until load_model() runs.
 _model = None
@@ -64,7 +64,7 @@ def load_model() -> WhisperModel:
         #     faster on a CPU, a little less precise. This is "quantisation".
         #     "float32" keeps the full precision.
         # https://github.com/SYSTRAN/faster-whisper#usage
-        _model = WhisperModel(MODEL_SIZE, device=None, compute_type=None)
+        _model = WhisperModel(MODEL_SIZE, device="cpu", compute_type="int8")
     return _model
 
 
@@ -85,13 +85,13 @@ def transcribe(x: np.ndarray, rate: int) -> str:
     #     word: the fastest. 5 is more accurate, and slower.
     # It returns two things: the segments of text, and information about the
     # audio (`_info`, not used here).
-    segments, _info = model.transcribe(audio, language=None, beam_size=None)
+    segments, _info = model.transcribe(audio, language="en", beam_size=1)
 
     # TODO: `segments` gives the pieces of text one by one: each `segment` has
     # a `.text`. Join all the `.text` into one text, separated by spaces, and
     # return it. A for loop, or " ".join(...) with a comprehension, as in
     # step 3.
-    return ""
+    return " ".join([segment.text for segment in segments])
 
 
 # -----------------------------------------------------------------------------
@@ -110,7 +110,7 @@ def normalise(text: str) -> str:
 
     # TODO 1. The text in lower case.
     # https://docs.python.org/3/library/stdtypes.html#str.lower
-    lowered = None
+    lowered = text.lower()
 
     # 2. We go through the characters of `lowered` one by one, and build a new
     #    text `out`. A `for` loop over a text gives one character at a time.
@@ -124,7 +124,15 @@ def normalise(text: str) -> str:
         # Useful: c.isdigit() and c.isalpha() are True or False.
         # https://docs.python.org/3/library/stdtypes.html#str.isdigit
         # `out = out + something` adds text at the end of `out`.
-        pass
+        if c.isdigit():
+            # Si c'est un chiffre, on le remplace par son mot entouré d'espaces
+            out += f" {DIGITS[c]} "
+        elif c.isalpha() or c.isspace():
+            # Si c'est une lettre ou un espace, on conserve le caractère
+            out += c
+        else:
+            # Pour la ponctuation ou caractères spéciaux, on ajoute un espace
+            out += " "
 
     # 3. `out.split()` cuts the text at every run of spaces: a list of words.
     #    " ".join(...) glues them back with exactly one space.
