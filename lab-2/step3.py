@@ -365,4 +365,4 @@ def interpret(text: str) -> tuple[str, str | None, float]:
         if order["text"] == best:
             return (order["intent"], order["arguments"], confidence)
     
-    return "unparsed", None, 0.0
+    return ("unparsed", None, 0.0)
