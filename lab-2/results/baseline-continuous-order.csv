@@ -1,2 +1,2 @@
 path,speech,condition,n,intent_accuracy,wer,latency_ms_median,latency_ms_p90,stops_obeyed
-baseline,continuous,clean,60,0.0,0.954,12.09,16.91,0/8
+baseline,continuous,clean,60,0.0,0.954,12.07,15.62,0/8

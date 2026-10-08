@@ -53,7 +53,7 @@ Preuves : `results/baseline-continuous-order.csv` et `results/baseline-words-ord
 
 
 
-## Step 4 — Rapport sur l'option pré-entraînée (Whisper)
+## Step 4 — Option pré-entraînée (Whisper)
 
 ### 1. Choix du modèle Whisper
 * **Modèle sélectionné :** `tiny.en`
@@ -103,7 +103,7 @@ Pour garantir un traitement en temps réel, le système doit impérativement avo
 
 
 
-## Step 5 — Rapport sur le garde-corps (`should_act`)
+## Step 5 — Garde-corps (`should_act`)
 
 ### 1. Implémentation du garde-corps
 Dans `step5.py`, la fonction `should_act(intent, confidence, state)` filtre les actions selon trois règles fondamentales :
@@ -116,3 +116,87 @@ Dans `step5.py`, la fonction `should_act(intent, confidence, state)` filtre les 
 ### 2. Résultats du balayage des seuils (`sweep.csv`)
 
 Nous choisissons un seuil de confiance de **0.50** car il maximise le nombre d'actions correctes (44/60) tout en maintenant les refus au plus bas (15), tout en sachant qu'un refus d'action classique est préférable à une mauvaise exécution et que la sécurité des arrêt d'urgence (stop) est traitée de manière inconditionnelle.
+
+
+
+## Step 6 — Gestion des intonations et de l'arrêt d'urgence (`stop`)
+
+### 1. Résultats des exécutions
+
+### Baseline (`--asr baseline`) :
+| Condition | n | Précision intention | WER | Latence médiane (ms) | Stops obéis |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **clean/order** | 60 | 0.000 | 0.954 | 12.88 | **0/8** |
+| **clean/cheerful** | 60 | 0.000 | 0.942 | 11.86 | **0/8** |
+| **clean/alarmed** | 60 | 0.000 | 0.897 | 12.34 | **0/8** |
+| **snr5/order** | 60 | 0.000 | 0.981 | 16.51 | **0/8** |
+| **snr5/cheerful** | 60 | 0.000 | 0.984 | 16.26 | **0/8** |
+| **snr5/alarmed** | 60 | 0.000 | 1.046 | 16.19 | **0/8** |
+
+### Option pré-entraînée Whisper (`--asr pretrained`) :
+| Condition | n | Précision intention | WER | Latence médiane (ms) | Stops obéis |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **clean/order** | 60 | 0.967 | 0.879 | 600.91 | **8/8** |
+| **clean/cheerful** | 60 | 0.983 | 0.888 | 595.89 | **8/8** |
+| **clean/alarmed** | 60 | 0.967 | 0.908 | 608.96 | **8/8** |
+| **snr5/order** | 60 | 0.717 | 0.872 | 603.55 | **7/8** |
+| **snr5/cheerful** | 60 | 0.867 | 0.860 | 593.39 | **7/8** |
+| **snr5/alarmed** | 60 | **0.533** | **1.006** | 618.20 | **3/8** |
+
+---
+
+### 2. Analyse des performances selon l'intonation
+
+1. **Échec de la Baseline sur parole continue :**
+   * La baseline (step 3) échoue sur la parole continue (`0%` de précision) car elle repose sur la correspondance directe de gabarits enregistrés sur des mots isolés et calmes.
+
+2. **Impact de l'intonation alarmée avec Whisper :**
+   * En condition optimale (`clean`), Whisper détecte parfaitement les ordres d'arrêt d'urgence (**8/8**) quelle que soit l'intonation.
+   * En présence de bruit de fond (`snr5`), l'intonation **alarmée** dégrade fortement la reconnaissance : la précision chute à **53,3%** (contre 71,7% en intonation neutre) et le nombre d'arrêts obéis s'effondre à **3/8**.
+   * **Explication :** La voix alarmée modifie la hauteur tonale (voix plus aiguë/criée) et la dynamique spectrale, s'éloignant des données d'entraînement standard et augmentant l'erreur (WER > 1.0) sous le bruit.
+
+---
+
+### 3. Recommandations d'architecture pour le système d'arrêt (Scénario §3.5)
+
+Les tests montrent que s'appuyer uniquement sur la chaîne ASR classique pour traiter un ordre `stop` vocal en situation de crise (voix déformée par l'alarme + bruit d'atelier) représente un **risque de sécurité majeur** (seuls 3 arrêts sur 8 exécutés sous `snr5/alarmed`).
+
+Pour garantir un niveau de sécurité industrielle, le robot doit traiter l'ordre `stop` via des canaux complémentaires :
+
+* **Canal physique / matériel dédié (Priorité 1) :** Ne pas faire reposer la sécurité critique uniquement sur la reconnaissance vocale. Un coup de poing d'arrêt d'urgence ou une télécommande sans fil portée par l'opérateur avec relais de sécurité doit rester le canal maître.
+* **Détection d'énergie/mot-clé dédié (Keyword Spotting) sur canal séparé :** Implémenter un modèle ultra-léger tournant en tâche de fond sur un canal parallèle dédié uniquement au mot-clé `"stop"`, configuré avec un seuil de confiance très bas et entraîné spécifiquement sur des voix criées/alarmées.
+* **Abaissement du seuil et contournement du Wake Word :** Supprimer l'exigence du *wake word* (`"robot three"`) pour le mot `"stop"` et accepter une détection directe à haute priorité sans passer par l'analyse grammaticale complète.
+
+
+
+## Step 7 — Réponse du robot et gestion de l'auto-écoute (Loopback)
+
+### 1. Analyse des trois options de synthèse vocale (TTS)
+
+Lors de l'exécution des différentes options de voix avec le moteur :
+
+* **Voix enregistrée (`recorded`) :**
+  * **Fonctionnement :** Lit des fichiers `.wav` pré-enregistrés dans `data/phrases/`.
+  * **Limites :** Le robot ne peut restituer que des phrases fixes (ex. *"ok"*, *"not understood"*, *"go forward"*). Il est incapable de prononcer des réponses dynamiques ou générées à la volée, comme des explications détaillées d'erreur (*"conveyor two busy with robot one waiting forty seconds"*).
+* **Voix embarquée (`onboard`) :**
+  * **Fonctionnement :** Génère la parole en local sur le processeur du robot à l'aide d'un moteur TTS léger.
+  * **Avantages :** Permet au robot d'énoncer n'importe quelle phrase dynamique sans dépendre d'une connexion réseau.
+* **Voix hébergée / cloud (`hosted`) :**
+  * **Fonctionnement :** Fait appel à un service de synthèse vocale externe via une API.
+  * **Contraintes :** Introduit une latence réseau fixe supplémentaire avant le premier son émis. Indisponible hors connexion.
+
+---
+
+### 2. Gestion du retour acoustique (Loopback) et interruption par l'humain
+
+### Problématique :
+Lorsque le robot parle, sa propre voix repasse dans son micro (*loopback*). Un détecteur d'activité vocale (VAD) classique déclencherait la détection et ferait interpréter par le robot ses propres paroles.
+
+### Solution implémentée (`speech_mask_while_speaking`) :
+Plutôt que de couper complètement le microphone pendant la parole du robot (ce qui supprimerait la possibilité pour l'opérateur d'interrompre le robot), nous avons mis en place un mécanisme d'interruption dynamique (*barge-in*) :
+1. Calcul du niveau sonore de référence de la voix du robot via le 90e percentile des trames d'émission (`ROBOT_PERCENTILE = 90.0`).
+2. Une trame n'est conservée comme de la parole humaine que si son niveau d'énergie dépasse celui du robot d'au moins **3 dB** (`BARGE_IN_DB = 3.0`).
+
+### Possibilité d'interruption par l'humain :
+* **Oui, l'humain peut toujours interrompre le robot**, à condition de parler suffisamment fort pour dépasser la voix du robot de +3 dB.
+* Si le micro était simplement coupé pendant l'élocution du robot, le droit d'interruption (*barge-in*) serait perdu, ce qui nuirait à l'ergonomie et à la sécurité en cas d'ordre d'arrêt d'urgence pendant que le robot parle.
