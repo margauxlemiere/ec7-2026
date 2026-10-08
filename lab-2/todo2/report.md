@@ -195,35 +195,26 @@ Preuve : results/baseline-continuous-all.csv , results/pretrained-continuous-all
 
 
 
-## Step 7 — Réponse du robot et gestion de l'auto-écoute (Loopback)
+## Step 7 — Réponse du robot et auto-écoute
 
-### 1. Analyse des trois options de synthèse vocale (TTS)
+**Code.** `answer(action, reason)` renvoie `reason` (ou « not understood » s'il est vide) quand l'action est `refuse`, sinon la phrase de `SENTENCES` pour l'intention, ou « ok » par défaut. `speech_mask_while_speaking` garde, pendant que le robot parle, uniquement les trames dont l'énergie dépasse de `BARGE_IN_DB = 3.0` dB le niveau de sa voix (percentile `ROBOT_PERCENTILE = 90` de l'énergie des trames où il parle). Hors parole du robot, le masque de l'étape 2 s'applique.
 
-Lors de l'exécution des différentes options de voix avec le moteur :
+**Mesures** (`--set clean`, parole continue, voix chatterbox pour l'entrée) :
 
-* **Voix enregistrée (`recorded`) :**
-  * **Fonctionnement :** Lit des fichiers `.wav` pré-enregistrés dans `data/phrases/`.
-  * **Limites :** `recorded` ne joue que les phrases fixes de `data/phrases/` (« ok », « no », « not understood », « possible », « impossible », « stop », « go forward », « turn left », « turn right »). Il ne peut pas dire « conveyor 2 busy with robot 1, waiting 40 seconds », dont la raison dépend de l'état de l'atelier.
-  **Ce que je fais à la place.** Le robot dit « no » en voix enregistrée (immédiat, fiable), et la raison complète s'affiche sur son écran. Les haut-parleurs du robot étant de mauvaise qualité, l'écran sert aussi de canal de secours, et un voyant donne l'état sans latence. Une voix `onboard` ne servirait que pour les phrases dynamiques, au prix d'une latence plus grande.
-* **Voix embarquée (`onboard`) :**
-  * **Fonctionnement :** Génère la parole en local sur le processeur du robot à l'aide d'un moteur TTS léger.
-  * **Avantages :** Permet au robot d'énoncer n'importe quelle phrase dynamique sans dépendre d'une connexion réseau.
-* **Voix hébergée / cloud (`hosted`) :**
-  * **Fonctionnement :** Fait appel à un service de synthèse vocale externe via une API.
-  * **Contraintes :** Introduit une latence réseau fixe supplémentaire avant le premier son émis. Indisponible hors connexion.
+| Voix | Commande | Accusé (« ok ») | Explication imprévue | Remarque |
+|---|---|---|---|---|
+| `recorded` | `--voice recorded` | 0,5 ms (mesuré) | 0,1 ms, **aucun son** | phrase absente de `data/phrases/` : le moteur refuse, `no recording for ...` |
+| `onboard` | `--voice onboard` | 20,6 ms (mesuré) | 64,1 ms (mesuré) | synthèse locale sur ce CPU, backend `tone` sous Windows |
+| `hosted` | `--voice hosted` | 643,1 ms (chiffre déclaré) | 692,4 ms (chiffre déclaré) | synthèse locale (~23 à 72 ms) plus 620 ms de délai réseau fixé (`HOSTED_DELAY_S`) ; aucun service réel |
 
-### 2. Latences jusqu'au premier son
-`onboard` appelle la commande macOS `say` (`tools/voices.py`, ligne 286), absente de mon PC Windows : `FileNotFoundError: [WinError 2]`.
+**Note sur la machine.** Sous Windows, la première version de `tools/voices.py` cherchait la commande macOS `say` et plantait (`FileNotFoundError: [WinError 2]`). Cette erreur venait du code fourni, corrigé ensuite par l'enseignant (`git pull` du dépôt du cours). Les mesures ci-dessus sont faites avec la version corrigée, et `onboard` utilise le backend `tone`. Cette voix simple suffit pour le step 7, mais sa latence peut différer de celle d'un TTS embarqué plus riche.
 
-### 3. Gestion du retour acoustique (Loopback) et interruption par l'humain
+**Lecture.** `recorded` et `onboard` sont sous les 100 ms de Nielsen (réaction perçue comme instantanée), ce qui tient l'accusé « immédiat » du §3.5. `hosted` reste sous 1 s mais n'est plus instantané, et il s'ajoute à la reconnaissance : avec Whisper (≈ 400 ms médian), l'accusé arriverait vers 1,0 s (addition de mes deux mesures), au-dessus de ce que demande le §3.5.
 
-### Problématique :
-Lorsque le robot parle, sa propre voix repasse dans son micro (*loopback*). Un détecteur d'activité vocale (VAD) classique déclencherait la détection et ferait interpréter par le robot ses propres paroles.
+**Ce que `recorded` ne peut pas dire.** Il ne joue que les phrases fixes de `data/phrases/` (« ok », « no », « not understood », « possible », « impossible », « stop », « go forward », « turn left », « turn right »). La raison d'un refus, comme « conveyor 2 busy with robot 1, waiting 40 seconds », dépend de l'état de l'atelier : le moteur l'a confirmé (`no recording for ...`).
 
-### Solution implémentée (`speech_mask_while_speaking`) :
-Plutôt que de couper complètement le microphone pendant la parole du robot (ce qui supprimerait la possibilité pour l'opérateur d'interrompre le robot), nous avons mis en place un mécanisme d'interruption dynamique (*barge-in*) :
-1. Calcul du niveau sonore de référence de la voix du robot via le 90e percentile des trames d'émission (`ROBOT_PERCENTILE = 90.0`).
-2. Une trame n'est conservée comme de la parole humaine que si son niveau d'énergie dépasse celui du robot d'au moins **3 dB** (`BARGE_IN_DB = 3.0`).
+**Ce que je fais à la place.** Le robot dit « no » en voix enregistrée (0,5 ms, fiable), et la raison complète s'affiche sur son écran, qui « carries a full explanation » (§3.1). Les haut-parleurs étant de mauvaise qualité, l'écran sert aussi de canal de secours, et un voyant donne l'état sans latence. Une voix `onboard` ne servirait que pour les phrases dynamiques.
 
-### L'humain peut-il encore interrompre le robot ?
-Oui, à condition de parler plus fort que la voix du robot de plus de 3 dB : le micro n'est pas coupé pendant que le robot parle, ce qui aurait supprimé toute interruption. La limite est qu'un « stop » dit doucement pendant que le robot parle peut passer sous le seuil. C'est un argument de plus pour un canal d'arrêt dédié (step 6). Attention : comportement du code, non mesuré (car sous Windows).
+**Auto-écoute (`--voice onboard --loopback`).** Le détecteur se déclenche sur 0 trame de la voix du robot, et sur 146 trames du reste du signal : le robot ne prend plus sa propre voix pour un ordre. Limite : la voix testée est la voix simple `tone`, une voix plus riche pourrait fuiter davantage.
+
+**L'humain peut-il encore interrompre le robot ?** Oui en principe : le micro n'est pas coupé, et une trame compte comme humaine si elle dépasse de plus de 3 dB la voix du robot. Le résultat du loopback ne mesure pas cette interruption : c'est le comportement du code. Un « stop » dit doucement pendant que le robot parle peut passer sous le seuil, d'où le canal d'arrêt dédié (step 6).
