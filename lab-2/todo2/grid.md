@@ -12,7 +12,7 @@ Chiffres issus de `todo2/report.md` : voix chatterbox, intonation `order` sauf m
 |---|---|---|
 | Latence | **+3** — latence médiane de 12 ms en continu et 20 ms en mots, donc le « ok » immédiat du §3.5 est tenu sans effort | **+1** — 600 ms médian sur PC, sous la limite de 1 s de Nielsen (le flux de pensée n'est pas rompu) mais au-dessus de 0,1 s (non instantané) ; avec le trajet réseau et la voix de sortie, l'accusé du §3.5 risque de dépasser la seconde|
 | Coût total | **+3** — aucun modèle ni licence, quelques lignes de numpy tournent sur le matériel du robot | **+1** — modèle libre et gratuit (~75 Mo), mais il faut un poste d'atelier ou un CPU plus puissant pour tenir le temps réel |
-| Énergie | **+3** — quelques FFT sur des segments de 16 ms, calcul négligeable pour un robot sur batterie | **0** — le calcul tourne sur un poste d'atelier branché au secteur, donc la batterie du robot n'est pas touchée par la reconnaissance | 
+| Énergie | **+3** — quelques FFT sur des segments de 16 ms, calcul négligeable pour un robot sur batterie | **+2** — le calcul tourne sur un poste d'atelier branché au secteur, donc la batterie du robot n'est pas touchée par la reconnaissance | 
 | Mode de traitement | **+1** — chaque mot est traité dès que son segment se ferme, mais seulement si l'opérateur fait des pauses (0,0 en continu contre 0,583 en mots sur `clean`) | **−1** — l'ordre est transcrit en bloc après la fin de la parole, donc rien n'est reconnu avant la fin de la phrase |
 | Déploiement / souveraineté | **+3** — tout tourne sur le robot, sans réseau : l'autonomie hors ligne citée au §1 est assurée | **+1** — le robot ne peut pas l'exécuter (RTF 1,90) ; le §1 autorise l'exécution en atelier, mais cela ajoute un lien réseau et une dépendance au poste |
 | Robustesse | **−3** — 0,0 d'exactitude d'intention en continu dès `clean`, en mots 0,583 sur `clean` puis 0,117 à `snr30` : la parole « échoue dans le bruit » (§3.1) et ici dès le premier rung | **+2** — 0,967 sur `clean`, 0,917 à `snr10`, 0,750 à `snr5`, mais 0,100 à `snrm5` |
@@ -41,7 +41,7 @@ Chiffres issus de `todo2/report.md` : voix chatterbox, intonation `order` sauf m
 | Option | Total pondéré |
 |---|---|
 | A — baseline | +19 |
-| **B — Whisper `tiny.en`** | **+22** |
+| **B — Whisper `tiny.en`** | **+26** |
 
 ## Knock-out
 
@@ -56,7 +56,7 @@ Seuil d'acceptation : 8/8 stops obéis sur `clean` et sur `snr5`, pour les trois
 
 **Lecture.** Le critère élimine les deux options *si le stop dépend de la reconnaissance vocale seule*. B est la plus proche (8/8 sur `clean`), mais 3/8 en voix alarmée à `snr5` reste inacceptable : c'est justement la façon dont une personne crie « stop » dans un atelier bruyant. Le knock-out ne départage donc pas A et B sur la voix : il impose que **le stop ne passe pas par la chaîne de reconnaissance générale** (réponse au point à régler du §3.5 : non, il ne passe pas par la même chaîne que `make <product>`).
 
-**Conséquence sur le choix.** Une fois le stop sorti de la chaîne, le choix entre A et B se fait sur le reste des critères. Là, B l'emporte au total pondéré (+22 contre +19) et surtout sur la robustesse (0,917 contre 0,0 à `snr10`), qui est le critère qui rend les autres ordres utilisables.
+**Conséquence sur le choix.** Une fois le stop sorti de la chaîne, le choix entre A et B se fait sur le reste des critères. Là, B l'emporte au total pondéré (+26 contre +19) et surtout sur la robustesse (0,917 contre 0,0 à `snr10`), qui est le critère qui rend les autres ordres utilisables.
 
 > **« Je retiens Whisper `tiny.en`, exécuté sur un poste d'atelier plutôt que sur le robot, et j'accepte une dépendance réseau et un délai supplémentaire afin d'obtenir une reconnaissance utilisable dans le bruit pour les ordres courants. Je n'accepte pas que le stop dépende de cette chaîne : il passe par un canal dédié (arrêt physique ou télécommande, plus un mot-clé « stop » sans mot d'activation et à seuil bas), car un stop non obéi est le seul échec que le système ne peut pas se permettre. »**
 
