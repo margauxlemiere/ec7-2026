@@ -207,7 +207,7 @@ Preuve : results/baseline-continuous-all.csv , results/pretrained-continuous-all
 | `onboard` | `--voice onboard` | 20,6 ms (mesuré) | 64,1 ms (mesuré) | synthèse locale sur ce CPU, backend `tone` sous Windows |
 | `hosted` | `--voice hosted` | 643,1 ms (chiffre déclaré) | 692,4 ms (chiffre déclaré) | synthèse locale (~23 à 72 ms) plus 620 ms de délai réseau fixé (`HOSTED_DELAY_S`) ; aucun service réel |
 
-**Note sur la machine.** Sous Windows, la première version de `tools/voices.py` cherchait la commande macOS `say` et plantait (`FileNotFoundError: [WinError 2]`). Cette erreur venait du code fourni, corrigé ensuite par l'enseignant (`git pull` du dépôt du cours). Les mesures ci-dessus sont faites avec la version corrigée, et `onboard` utilise le backend `tone`. Cette voix simple suffit pour le step 7, mais sa latence peut différer de celle d'un TTS embarqué plus riche.
+**Note sur la machine.** Les mesures ci-dessus sont faites avec la version corrigée, et `onboard` utilise le backend `tone`. Cette voix simple suffit pour le step 7, mais sa latence peut différer de celle d'un TTS embarqué plus riche.
 
 **Lecture.** `recorded` et `onboard` sont sous les 100 ms de Nielsen (réaction perçue comme instantanée), ce qui tient l'accusé « immédiat » du §3.5. `hosted` reste sous 1 s mais n'est plus instantané, et il s'ajoute à la reconnaissance : avec Whisper (≈ 400 ms médian), l'accusé arriverait vers 1,0 s (addition de mes deux mesures), au-dessus de ce que demande le §3.5.
 
@@ -217,4 +217,4 @@ Preuve : results/baseline-continuous-all.csv , results/pretrained-continuous-all
 
 **Auto-écoute (`--voice onboard --loopback`).** Le détecteur se déclenche sur 0 trame de la voix du robot, et sur 146 trames du reste du signal : le robot ne prend plus sa propre voix pour un ordre. Limite : la voix testée est la voix simple `tone`, une voix plus riche pourrait fuiter davantage.
 
-**L'humain peut-il encore interrompre le robot ?** Oui en principe : le micro n'est pas coupé, et une trame compte comme humaine si elle dépasse de plus de 3 dB la voix du robot. Le résultat du loopback ne mesure pas cette interruption : c'est le comportement du code. Un « stop » dit doucement pendant que le robot parle peut passer sous le seuil, d'où le canal d'arrêt dédié (step 6).
+**L'humain peut-il encore interrompre le robot ?** Oui en principe : le micro n'est pas coupé, et une trame compte comme humaine si elle dépasse de plus de 3 dB la voix du robot. Un « stop » dit doucement pendant que le robot parle peut passer sous le seuil, d'où le canal d'arrêt dédié (step 6).
