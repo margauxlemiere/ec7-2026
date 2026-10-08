@@ -98,3 +98,17 @@ Pour garantir un traitement en temps réel, le système doit impérativement avo
 * **Sur le CPU du robot :** Le RTF est de `1.90` ($> 1.0$). Le processeur met 1,9 seconde pour traiter 1 seconde de parole, ce qui génère un retard cumulatif.
 
 **Décision :** Le robot **ne peut pas exécuter Whisper en local** sur son processeur embarqué. Seule la **baseline de l'étape 3** (reconnaissance par templates) peut être retenue pour un fonctionnement autonome en temps réel sur le robot. Pour conserver l'option Whisper, les calculs devraient être déportés sur une infrastructure distante (serveur/GPU).
+
+## Step 5 — Rapport sur le garde-corps (`should_act`)
+
+### 1. Implémentation du garde-corps
+Dans `step5.py`, la fonction `should_act(intent, confidence, state)` filtre les actions selon trois règles fondamentales :
+* **Ordres indéterminés (`unparsed`) :** Si la reconnaissance échoue (`intent == "unparsed"`), le robot refuse immédiatement d'agir (`False`).
+* **Gestion prioritaire de l'arrêt d'urgence (`stop`) :** Si l'intention détectée est `"stop"`, l'action est exécutée (`True`) quelle que soit la valeur du score de confiance. 
+* **Autres ordres d'action :** L'action est exécutée (`True`) uniquement si le score de confiance dépasse le seuil dynamique `state["threshold"]`, sinon elle est refusée (`False`).
+
+---
+
+### 2. Résultats du balayage des seuils (`sweep.csv`)
+
+Nous choisissons un seuil de confiance de **0.50** car il maximise le nombre d'actions correctes (44/60) tout en maintenant les refus au plus bas (15), tout en sachant qu'un refus d'action classique est préférable à une mauvaise exécution et que la sécurité des arrêt d'urgence (stop) est traitée de manière inconditionnelle.
