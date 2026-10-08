@@ -1,5 +1,7 @@
 ## Report
 
+
+
 ## Step 2 — Détection d'activité vocale
 
 **Fonctions nommées.** `highpass_filter` (filtre passe-haut : la moyenne glissante donne la partie lente, on la soustrait ; on garde la voix au-dessus de 300 Hz, car l'atelier gronde sous 200 Hz) et `frame_energy` (puissance moyenne par trame de 10 ms).
@@ -22,6 +24,8 @@
 **Rung où la marge cesse de marcher : snr20** (critère : plus d'un tiers des ordres coupés) : 25/60 coupés, puis 49/60 à snr10. Le plancher de bruit, calculé sur les 10 % de trames les plus calmes, perd son sens quand il n'y a plus de vrai silence ; aucune marge fixe ne règle les rungs en dessous de snr10. Dans l'atelier, où les moteurs du robot tournent sur la moitié des fichiers (`data/manifest.csv`), ce VAD à seuil fixe n'est donc fiable que si le bruit reste faible.
 
 Preuve : `results/vad-continuous-order.csv`.
+
+
 
 ## Step 3 — La baseline, sans modèle
 
@@ -47,15 +51,17 @@ Preuves : `results/baseline-continuous-order.csv` et `results/baseline-words-ord
 
 **Remarque sur `stop`.** Le compteur `stops` reste à 0/8 dans les deux runs. Le traitement de `stop` est étudié aux steps 5 et 6.
 
+
+
 ## Step 4 — Rapport sur l'option pré-entraînée (Whisper)
 
-## 1. Choix du modèle Whisper
+### 1. Choix du modèle Whisper
 * **Modèle sélectionné :** `tiny.en`
 * **Justification :** 
   * Le modèle doit tourner sur le CPU restreint du robot. `tiny.en` est la version la plus légère (~75 Mo).
   * L'extension `.en` indique un modèle exclusivement entraîné sur la langue anglaise, offrant un meilleur taux d'erreur par mot (WER) qu'un modèle multilingue équivalent tout en restant très rapide.
 
-## 2. Normalisation du texte
+### 2. Normalisation du texte
 Whisper transcrit le texte sous forme littérale avec majuscules, chiffres et ponctuation (ex. *"Robot 3, carry blue pallet."*). Notre grammaire de l'étape 3 attend un format brut (ex. *"robot three carry blue pallet"*).
 
 Sans la fonction `normalise()`, la reconnaissance échoue presque systématiquement :
@@ -65,7 +71,7 @@ Sans la fonction `normalise()`, la reconnaissance échoue presque systématiquem
 
 Grâce aux règles de conversion (passage en minuscules, conversion des chiffres en lettres via le dictionnaire `DIGITS` et suppression de la ponctuation), le texte normalisé permet de retrouver une précision optimale.
 
-## 3. Analyse des résultats et du Facteur Temps Réel (RTF)
+### 3. Analyse des résultats et du Facteur Temps Réel (RTF)
 
 ### Résultats de l'exécution (`--asr pretrained`) :
 
@@ -82,13 +88,9 @@ Grâce aux règles de conversion (passage en minuscules, conversion des chiffres
 * **Facteur Temps Réel (RTF) mesuré sur PC :** `0.32`
 * **Facteur Temps Réel (RTF) sur le CPU du robot :** `1.90` (valeur fixe du processeur embarqué)
 
----
-
 ### Analyse des performances :
 1. **Résistance au bruit :** La précision des intentions reste excellente ($\ge 91,7\%$) jusqu'à un niveau de bruit de `snr10`. Elle commence à s'effondrer à partir de `snr5` ($75\%$) et devient inexploitable à `snrm5` ($10\%$).
 2. **Gestion des arrêt d'urgence (`stops`) :** La métrique affiche `0/8` sur tous les tests. Cela s'explique par le fait que l'ordre `stop` requiert la vérification spécifique au niveau de `should_act` (Étape 5) pour être validé et exécuté par le moteur.
-
----
 
 ### Conclusion sur l'option exécutable par le robot :
 
@@ -98,6 +100,8 @@ Pour garantir un traitement en temps réel, le système doit impérativement avo
 * **Sur le CPU du robot :** Le RTF est de `1.90` ($> 1.0$). Le processeur met 1,9 seconde pour traiter 1 seconde de parole, ce qui génère un retard cumulatif.
 
 **Décision :** Le robot **ne peut pas exécuter Whisper en local** sur son processeur embarqué. Seule la **baseline de l'étape 3** (reconnaissance par templates) peut être retenue pour un fonctionnement autonome en temps réel sur le robot. Pour conserver l'option Whisper, les calculs devraient être déportés sur une infrastructure distante (serveur/GPU).
+
+
 
 ## Step 5 — Rapport sur le garde-corps (`should_act`)
 
