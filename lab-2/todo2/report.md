@@ -17,7 +17,7 @@
 | 9 dB | 0 | 10 (16/42) | 25 (27/74) | 49 (39/188) | 56 (34/324) |
 | 12 dB | 0 | 12 (8/51) | 38 (13/95) | 59 (29/264) | 59 (46/569) |
 | 18 dB | 0 | 28 (10/72) | 57 (25/199) | 60 (63/652) | 32 (163/1330) |
-| 24 dB | 0 | 47 (17/125) | 60 (37/372) | 20 (200/1292) | 0 fichier détecté |
+| 24 dB | 0 | 47 (17/125) | 60 (37/372) | 20 (200/1292) | 60 sans réponse |
 
 **Marge retenue : 9 dB.** Aucun ordre `clean` n'est coupé, quelle que soit la marge testée, donc `clean` ne départage pas. Une marge plus haute coupe beaucoup plus d'ordres dès snr30 (47/60 à 24 dB) car la voix faible passe sous le seuil. Une marge plus basse coupe moins mais le masque s'allume sur le bruit : l'erreur de début passe de 16 ms à 9 dB à 75 ms à 6 dB et 133 ms à 5 dB à snr30. 9 dB garde les erreurs de début proches de celles de `clean` tout en limitant les ordres coupés.
 
@@ -74,6 +74,7 @@ Grâce aux règles de conversion (passage en minuscules, conversion des chiffres
 ### 3. Analyse des résultats et du Facteur Temps Réel (RTF)
 
 ### Résultats de l'exécution (`--asr pretrained`) :
+--set all --asr pretrained, parole continue, voix chatterbox, intonation order
 
 | Condition | n | Précision intention | WER | Latence médiane (ms) | Latence P90 (ms) | Stops obéis |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -110,14 +111,28 @@ Preuve : results/pretrained-continuous-order.csv
 ### 1. Implémentation du garde-corps
 Dans `step5.py`, la fonction `should_act(intent, confidence, state)` filtre les actions selon trois règles fondamentales :
 * **Ordres indéterminés (`unparsed`) :** Si la reconnaissance échoue (`intent == "unparsed"`), le robot refuse immédiatement d'agir (`False`).
-* **Gestion prioritaire de l'arrêt d'urgence (`stop`) :** Si l'intention détectée est `"stop"`, l'action est exécutée (`True`) quelle que soit la valeur du score de confiance. 
-* **Autres ordres d'action :** L'action est exécutée (`True`) uniquement si le score de confiance dépasse le seuil dynamique `state["threshold"]`, sinon elle est refusée (`False`).
+* **Gestion prioritaire de l'arrêt d'urgence (`stop`) :** On fait le choix suivant : si l'intention détectée est `"stop"`, l'action est exécutée (`True`) quelle que soit la valeur du score de confiance. Il s'agit d'une règle de sécurité !
+* **Autres ordres d'action :** L'action est exécutée (`True`) uniquement si le score de confiance dépasse le seuil dynamique `state["threshold"]`, sinon elle est refusée (`False`). 
 
 ---
 
 ### 2. Résultats du balayage des seuils (`sweep.csv`)
 
-Nous choisissons un seuil de confiance de **0.50** car il maximise le nombre d'actions correctes (44/60) tout en maintenant les refus au plus bas (15), tout en sachant qu'un refus d'action classique est préférable à une mauvaise exécution et que la sécurité des arrêt d'urgence (stop) est traitée de manière inconditionnelle.
+**Mesure** : `python engine.py --input files --set snr5 --asr pretrained --sweep 0.0:1.0:0.05` (parole continue, voix chatterbox, intonation `order`). Preuve : `sweep.csv`.
+
+| Seuil | Correctes | Fausses | Refus | Stops refusés |
+|---|---|---|---|---|
+| 0,0 à 0,50 | 44 | 1 | 15 | 1 |
+| 0,65 | 38 | 1 | 21 | 1 |
+| 0,85 | 33 | 1 | 26 | 1 |
+| 0,90 | 33 | 0 | 27 | 1 |
+| 1,0 | 7 | 0 | 53 | 1 |
+
+**Seuil retenu : 0,50.** Le sweep est plat de 0,0 à 0,50 puis perd des actions correctes dès 0,55 : 0,50 est le plus haut seuil sans perte. Une action fausse (1 sur 60) subsiste jusqu'à 0,85 ; la supprimer (0,90) coûterait 11 actions correctes de plus, soit 27 refus au lieu de 15. Une mauvaise action dans des voies partagées est plus grave qu'un refus, mais l'unique action fausse a une confiance supérieure à 0,85 : aucun seuil raisonnable ne l'arrête.
+
+**Quand le robot refuse**, `answer("refuse", "")` renvoie « not understood » (§3.4) et le robot ne bouge pas ; l'opérateur répète l'ordre.
+
+**Limite.** Un stop est refusé dans 1 cas sur 8 à tous les seuils, y compris 0,0 : il est classé `unparsed` par la reconnaissance, donc `should_act` n'est jamais appelé sur lui. Le seuil ne protège pas le stop ; c'est la raison du canal dédié (step 6).
 
 Preuve : sweep.csv
 
@@ -126,7 +141,9 @@ Preuve : sweep.csv
 
 ### 1. Résultats des exécutions
 
-### Baseline (`--asr baseline`) :
+### Baseline  :
+python engine.py --input files --set clean --set snr5 --intonation all
+
 | Condition | n | Précision intention | WER | Latence médiane (ms) | Stops obéis |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **clean/order** | 60 | 0.000 | 0.954 | 12.88 | **0/8** |
@@ -136,7 +153,9 @@ Preuve : sweep.csv
 | **snr5/cheerful** | 60 | 0.000 | 0.984 | 16.26 | **0/8** |
 | **snr5/alarmed** | 60 | 0.000 | 1.046 | 16.19 | **0/8** |
 
-### Option pré-entraînée Whisper (`--asr pretrained`) :
+### Option pré-entraînée Whisper :
+python engine.py --input files --set clean --set snr5 --intonation all --asr pretrained
+
 | Condition | n | Précision intention | WER | Latence médiane (ms) | Stops obéis |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **clean/order** | 60 | 0.967 | 0.879 | 600.91 | **8/8** |
@@ -145,6 +164,8 @@ Preuve : sweep.csv
 | **snr5/order** | 60 | 0.717 | 0.872 | 603.55 | **7/8** |
 | **snr5/cheerful** | 60 | 0.867 | 0.860 | 593.39 | **7/8** |
 | **snr5/alarmed** | 60 | **0.533** | **1.006** | 618.20 | **3/8** |
+
+Attention : Le WER du moteur est calculé sur le texte brut de Whisper (exemple : 'Robot 3, stop.' contre 'robot three stop' donne 1.0 alors que l'ordre est compris).
 
 ---
 
@@ -182,7 +203,8 @@ Lors de l'exécution des différentes options de voix avec le moteur :
 
 * **Voix enregistrée (`recorded`) :**
   * **Fonctionnement :** Lit des fichiers `.wav` pré-enregistrés dans `data/phrases/`.
-  * **Limites :** Le robot ne peut restituer que des phrases fixes (ex. *"ok"*, *"not understood"*, *"go forward"*). Il est incapable de prononcer des réponses dynamiques ou générées à la volée, comme des explications détaillées d'erreur (*"conveyor two busy with robot one waiting forty seconds"*).
+  * **Limites :** `recorded` ne joue que les phrases fixes de `data/phrases/` (« ok », « no », « not understood », « possible », « impossible », « stop », « go forward », « turn left », « turn right »). Il ne peut pas dire « conveyor 2 busy with robot 1, waiting 40 seconds », dont la raison dépend de l'état de l'atelier.
+  **Ce que je fais à la place.** Le robot dit « no » en voix enregistrée (immédiat, fiable), et la raison complète s'affiche sur son écran. Les haut-parleurs du robot étant de mauvaise qualité, l'écran sert aussi de canal de secours, et un voyant donne l'état sans latence. Une voix `onboard` ne servirait que pour les phrases dynamiques, au prix d'une latence plus grande.
 * **Voix embarquée (`onboard`) :**
   * **Fonctionnement :** Génère la parole en local sur le processeur du robot à l'aide d'un moteur TTS léger.
   * **Avantages :** Permet au robot d'énoncer n'importe quelle phrase dynamique sans dépendre d'une connexion réseau.
@@ -190,9 +212,10 @@ Lors de l'exécution des différentes options de voix avec le moteur :
   * **Fonctionnement :** Fait appel à un service de synthèse vocale externe via une API.
   * **Contraintes :** Introduit une latence réseau fixe supplémentaire avant le premier son émis. Indisponible hors connexion.
 
----
+### 2. Latences jusqu'au premier son
+`onboard` appelle la commande macOS `say` (`tools/voices.py`, ligne 286), absente de mon PC Windows : `FileNotFoundError: [WinError 2]`.
 
-### 2. Gestion du retour acoustique (Loopback) et interruption par l'humain
+### 3. Gestion du retour acoustique (Loopback) et interruption par l'humain
 
 ### Problématique :
 Lorsque le robot parle, sa propre voix repasse dans son micro (*loopback*). Un détecteur d'activité vocale (VAD) classique déclencherait la détection et ferait interpréter par le robot ses propres paroles.
@@ -202,6 +225,5 @@ Plutôt que de couper complètement le microphone pendant la parole du robot (ce
 1. Calcul du niveau sonore de référence de la voix du robot via le 90e percentile des trames d'émission (`ROBOT_PERCENTILE = 90.0`).
 2. Une trame n'est conservée comme de la parole humaine que si son niveau d'énergie dépasse celui du robot d'au moins **3 dB** (`BARGE_IN_DB = 3.0`).
 
-### Possibilité d'interruption par l'humain :
-* **Oui, l'humain peut toujours interrompre le robot**, à condition de parler suffisamment fort pour dépasser la voix du robot de +3 dB.
-* Si le micro était simplement coupé pendant l'élocution du robot, le droit d'interruption (*barge-in*) serait perdu, ce qui nuirait à l'ergonomie et à la sécurité en cas d'ordre d'arrêt d'urgence pendant que le robot parle.
+### L'humain peut-il encore interrompre le robot ?
+Oui, à condition de parler plus fort que la voix du robot de plus de 3 dB : le micro n'est pas coupé pendant que le robot parle, ce qui aurait supprimé toute interruption. La limite est qu'un « stop » dit doucement pendant que le robot parle peut passer sous le seuil. C'est un argument de plus pour un canal d'arrêt dédié (step 6). Attention : comportement du code, non mesuré (car sous Windows).
