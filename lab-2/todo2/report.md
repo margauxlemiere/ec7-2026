@@ -36,8 +36,6 @@ Preuve : `results/vad-continuous-order.csv`.
 | Parole continue | `python engine.py --input files --set all` | 0,0 / 0,954 | 0,067 / 0,767 | 0,05 / 0,791 | 0,0 |
 | Mot par mot | `python engine.py --input files --set all --speech words` | 0,583 / 0,26 | 0,117 / 0,763 | 0,05 / 0,962 | 0,0 |
 
-Preuves : `results/baseline-continuous-order.csv` et `results/baseline-words-order.csv`.
-
 **Palier d'effondrement.**
 - *Parole continue* : il n'y en a pas, l'option échoue déjà sur `clean` (0,0). Les 0,067 à `snr30` et 0,05 à `snr20` sont quelques ordres isolés, pas un fonctionnement.
 - *Mot par mot* : la précision tombe de 0,583 (`clean`) à 0,117 à `snr30`, soit une perte de 80 % dès le premier rung bruité, puis 0,05 à `snr20` et 0,0 dès `snr10`. Le palier est entre `clean` et `snr30`.
@@ -50,6 +48,8 @@ Preuves : `results/baseline-continuous-order.csv` et `results/baseline-words-ord
 3. Rester dans le vocabulaire fermé, avec « robot three » devant chaque ordre.
 
 **Remarque sur `stop`.** Le compteur `stops` reste à 0/8 dans les deux runs. Le traitement de `stop` est étudié aux steps 5 et 6.
+
+Preuve : results/baseline-continuous-order.csv la results/baseline-words-order.csv
 
 
 
@@ -101,6 +101,8 @@ Pour garantir un traitement en temps réel, le système doit impérativement avo
 
 **Décision :** Le robot **ne peut pas exécuter Whisper en local** sur son processeur embarqué. Seule la **baseline de l'étape 3** (reconnaissance par templates) peut être retenue pour un fonctionnement autonome en temps réel sur le robot. Pour conserver l'option Whisper, les calculs devraient être déportés sur une infrastructure distante (serveur/GPU).
 
+Preuve : results/pretrained-continuous-order.csv
+
 
 
 ## Step 5 — Garde-corps (`should_act`)
@@ -117,6 +119,7 @@ Dans `step5.py`, la fonction `should_act(intent, confidence, state)` filtre les 
 
 Nous choisissons un seuil de confiance de **0.50** car il maximise le nombre d'actions correctes (44/60) tout en maintenant les refus au plus bas (15), tout en sachant qu'un refus d'action classique est préférable à une mauvaise exécution et que la sécurité des arrêt d'urgence (stop) est traitée de manière inconditionnelle.
 
+Preuve : sweep.csv
 
 
 ## Step 6 — Gestion des intonations et de l'arrêt d'urgence (`stop`)
@@ -166,6 +169,8 @@ Pour garantir un niveau de sécurité industrielle, le robot doit traiter l'ordr
 * **Canal physique / matériel dédié (Priorité 1) :** Ne pas faire reposer la sécurité critique uniquement sur la reconnaissance vocale. Un coup de poing d'arrêt d'urgence ou une télécommande sans fil portée par l'opérateur avec relais de sécurité doit rester le canal maître.
 * **Détection d'énergie/mot-clé dédié (Keyword Spotting) sur canal séparé :** Implémenter un modèle ultra-léger tournant en tâche de fond sur un canal parallèle dédié uniquement au mot-clé `"stop"`, configuré avec un seuil de confiance très bas et entraîné spécifiquement sur des voix criées/alarmées.
 * **Abaissement du seuil et contournement du Wake Word :** Supprimer l'exigence du *wake word* (`"robot three"`) pour le mot `"stop"` et accepter une détection directe à haute priorité sans passer par l'analyse grammaticale complète.
+
+Preuve : results/baseline-continuous-all.csv , results/pretrained-continuous-all.csv
 
 
 

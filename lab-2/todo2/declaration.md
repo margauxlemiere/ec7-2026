@@ -6,7 +6,7 @@ Pour quels éléments :
 - Pour comprendre l'environnement Git/GitHub et m'y former
 - Pour régler mes bugs lors de l'exécution sous Windows
 Comment :
-- Je lui ai demandé de me générer les commandes à écrire sur le terminal pour créer mon environnement de travail (repository, ...)
+- Je lui ai demandé de me générer les commandes à écrire sur le terminal pour récupérer le projet depuis GitLab et créer mon environnement de travail en local et sur GitHub
 - Je lui ai envoyé des captures d'écran de mes bugs pour comprendre le problème et trouver une solution
 Ce que j'ai vérifié :
 - J'ai exécuté les commandes qu'ils me donnaient et vérifier qu'elles faisaient bien l'action demandée
