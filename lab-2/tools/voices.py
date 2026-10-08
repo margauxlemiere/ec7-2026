@@ -23,6 +23,7 @@ import math
 import pathlib
 import shutil
 import subprocess
+import sys
 import tempfile
 import wave
 
@@ -261,7 +262,7 @@ def available() -> str:
         return "kokoro"
     if shutil.which("piper"):
         return "piper"
-    if shutil.which("say"):
+    if sys.platform == "darwin" and shutil.which("say") and shutil.which("afconvert"):
         return "say"
     if shutil.which("espeak-ng") or shutil.which("espeak"):
         return "espeak"
