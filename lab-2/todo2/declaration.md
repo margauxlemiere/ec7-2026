@@ -19,5 +19,5 @@ Conversation
 Seule
 
 # 3. Mon rôle 
-Tout le TD en excluant l'environnement Git. Environ 4 heures au total, en comptant le temps passé à comprendre l'environnement Git.
+Tout le TD en excluant l'environnement Git. Environ 6 heures au total, en comptant le temps passé à comprendre l'environnement Git.
 
