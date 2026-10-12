@@ -3,14 +3,19 @@
 
     python engine.py --input files --set even --show
     python engine.py --input files --set all
+    python engine.py --input files --set all --tag change
     python engine.py --input files --set absent
     python engine.py --task policy
-    python engine.py --input device
+    python engine.py --input files --set robot
+
+You write one file per step: `step2.py` (detect_marker), `step3.py`
+(detect_sign), `step6.py` (policy). Every run leaves its own file in
+`results/`, named after what it ran.
 
 Two detectors, scored apart, because they fail apart:
 
     detect_marker(image)   the nine paper cylinders of markers.pdf
-    detect_sign(image)     the six road signs of road-signs.pdf
+    detect_sign(image)     the six model road signs of the platform
 
 Each one answers `unknown` on everything that is not its own family, and that
 includes the other family. A red octagon is an excellent false positive for a
@@ -24,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import importlib
 import json
 import pathlib
 import statistics
@@ -35,28 +41,76 @@ import cv2
 import numpy as np
 
 import harness
-import student
 
 HERE = pathlib.Path(__file__).resolve().parent
 DATA = HERE / "data"
+RESULTS = HERE / "results"
 CONDITIONS = ["even", "low-sun", "shadow", "mixed", "absent"]
+# Photographs taken with the robot's own camera, when data/ has them. Real
+# light, a distance measured with a tape, and often no bearing.
+ROBOT = "robot"
 FPS = 10.0                       # the robot looks ten times a second
 ACTIONS = {"forward", "slow", "stop", "turn_left", "turn_right", "report"}
 DETECTORS = {"marker": ("cylinder", "detect_marker"), "sign": ("sign", "detect_sign")}
 # A sign has a family before it has a name: a red octagon, a blue disc with an
-# arrow in it, a white disc crossed out. The lab asks for the family, and the
-# assignment asks which arrow.
+# arrow in it, a white disc crossed out. `family_accuracy` scores the family,
+# `accuracy` the name, which needs the arrow.
 SIGN_FAMILY = {"sign-stop": "stop", "sign-free": "free", "sign-up": "direction",
                "sign-down": "direction", "sign-left": "direction",
                "sign-right": "direction"}
 
 
 # ------------------------------------------------------------------- calling
+# You write one file per step. Each function lives in the file of its step, and
+# a file that does not load yet does not stop the steps before it.
+STEP_OF = {"detect_marker": "step2", "detect_sign": "step3", "policy": "step6"}
+_modules: dict = {}
+# The values you set yourself, step by step. None means "not set yet".
+TODO_CONSTANTS = {"step2": ["FOCAL_PX", "CYLINDER_HEIGHT_M", "CLOSE_HEIGHT_PX"],
+                  "step3": ["SIGN_DIAMETER_M", "RED_OF_SHEET", "BLUE_OF_SHEET",
+                            "FILL_MIN", "FILL_MAX", "CIRCULARITY_MIN"],
+                  "step6": ["SLOW_FROM_M", "STOP_FROM_M", "STOP_TRUST",
+                            "ACT_TRUST"]}
+
+
+def module(name: str):
+    if name not in _modules:
+        try:
+            _modules[name] = importlib.import_module(name)
+        except Exception:                              # noqa: BLE001 — we report it
+            _modules[name] = None
+            print(f"{name}.py does not load: "
+                  f"{traceback.format_exc(limit=2).strip().splitlines()[-1]}")
+    return _modules[name]
+
+
+def still_to_do() -> None:
+    """What is still to do, in words rather than in a Python error."""
+    for step, names in TODO_CONSTANTS.items():
+        loaded = module(step)
+        if loaded is None:
+            continue
+        for placeholder in sorted(n for n in vars(loaded)
+                                  if n.startswith("useful_function_")
+                                  and n.endswith("_to_rename")):
+            # A placeholder imported from an earlier step is reported there.
+            if getattr(getattr(loaded, placeholder), "__module__", step) == step:
+                print(f"{step}.py: {placeholder} still has its placeholder name.")
+        for name in names:
+            if getattr(loaded, name, 0) is None:
+                print(f"{step}.py: {name} is still None. Give it a value.")
+
+
+def function_of(name: str):
+    step = STEP_OF[name]
+    return getattr(module(step), name, None), step
+
+
 def call(name: str, image: np.ndarray):
     """Run one detector on one image. A crash is a result, not a stop."""
-    function = getattr(student, name, None)
+    function, step = function_of(name)
     if function is None:
-        return ("unknown", None, None, 0.0), 0.0, f"student.{name} is missing"
+        return ("unknown", None, None, 0.0), 0.0, f"{step}.{name} is missing"
     start = time.perf_counter()
     try:
         answer = function(image)
@@ -70,7 +124,7 @@ def call(name: str, image: np.ndarray):
         target, distance, bearing, confidence = answer
     except (TypeError, ValueError):
         return ("unknown", None, None, 0.0), latency, \
-            f"student.{name} returned {answer!r}, expected 4 values"
+            f"{step}.{name} returned {answer!r}, expected 4 values"
     return (str(target), distance, bearing, float(confidence or 0.0)), latency, None
 
 
@@ -111,10 +165,10 @@ def score(rows: list[dict], show: bool) -> tuple[list[dict], list[dict], list[st
                         bucket["family_hit"] += 1
                     if target == row["target"]:
                         bucket["hit"] += 1
-                        if distance is not None:
+                        if distance is not None and row["distance_m"]:
                             bucket["dist_err"].append(
                                 abs(float(distance) - float(row["distance_m"])))
-                        if bearing is not None:
+                        if bearing is not None and row["bearing_deg"]:
                             bucket["bear_err"].append(
                                 abs(float(bearing) - float(row["bearing_deg"])))
                     else:
@@ -153,21 +207,28 @@ def score(rows: list[dict], show: bool) -> tuple[list[dict], list[dict], list[st
     return results, rows_out, complaints
 
 
-def write(results: list[dict], confusions: list[dict]) -> None:
+def keep(name: str, rows: list[dict], fields: list[str] | None = None) -> pathlib.Path:
+    """Every run leaves its own file in `results/`, named after what it ran."""
+    RESULTS.mkdir(exist_ok=True)
+    path = RESULTS / name
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fields or list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+def write(results: list[dict], confusions: list[dict], run: str) -> list[pathlib.Path]:
     order = {name: i for i, name in enumerate(CONDITIONS)}
     results.sort(key=lambda r: (order.get(r["condition"], 9), r["detector"]))
-    with (HERE / "results.csv").open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(results[0].keys()))
-        writer.writeheader()
-        writer.writerows(results)
-    if confusions:
-        with (HERE / "confusions.csv").open("w", newline="", encoding="utf-8") as fh:
-            writer = csv.DictWriter(fh, fieldnames=list(confusions[0].keys()))
-            writer.writeheader()
-            writer.writerows(confusions)
+    # Written even when empty: no confusion at all is a result too.
+    return [keep(f"detect-{run}.csv", results),
+            keep(f"confusions-{run}.csv", confusions,
+                 ["condition", "detector", "truth", "answer", "count"])]
 
 
-def report(results: list[dict], confusions: list[dict], complaints: list[str]) -> None:
+def report(results: list[dict], confusions: list[dict], complaints: list[str],
+           written: list[pathlib.Path]) -> None:
     print(f"{'condition':<9} {'det':<7} {'n':>4} {'acc':>6} {'family':>7} "
           f"{'dist MAE':>9} {'bear MAE':>9} {'FP rate':>8} {'FP/min':>7} "
           f"{'med ms':>7} {'p90 ms':>7}")
@@ -178,7 +239,10 @@ def report(results: list[dict], confusions: list[dict], complaints: list[str]) -
               f"{str(r['bearing_mae_deg']):>9} {r['false_positive_rate']:>8} "
               f"{r['fp_per_minute']:>7} {r['latency_ms_median']:>7} "
               f"{r['latency_ms_p90']:>7}")
-    print("\nresults.csv written, one row per condition and per detector.")
+    print(f"\n{written[0].relative_to(HERE)} written, one row per condition and "
+          "per detector.")
+    if len(written) > 1:
+        print(f"{written[1].relative_to(HERE)} written: what was taken for what.")
     if confusions:
         print("\nwhat was taken for what, most frequent first:")
         for row in confusions[:6]:
@@ -224,12 +288,15 @@ MOVING = {"forward", "slow", "turn_left", "turn_right"}
 
 
 def replay() -> int:
-    history, faults = [], []
+    policy, step_file = function_of("policy")
+    history, faults, rows = [], [], []
     stop_seen, stopped = False, False
     for step, (detection, state) in enumerate(APPROACH):
         state = dict(state, history=list(history))
         try:
-            action = student.policy(dict(detection), state)
+            if policy is None:
+                raise NameError(f"{step_file}.policy is missing")
+            action = policy(dict(detection), state)
         except Exception:                              # noqa: BLE001
             print(f"  step {step}: policy raised "
                   f"{traceback.format_exc(limit=2).strip().splitlines()[-1]}")
@@ -243,6 +310,7 @@ def replay() -> int:
         shown = "-" if distance is None else f"{distance:.2f} m"
         print(f"  step {step:>2}  {detection['target']:<10} {shown:<8}"
               f" conf {detection['confidence']:.2f}  ->  {action}")
+        before = len(faults)
 
         if detection["target"] == "sign-stop" and distance and distance <= 1.2 \
                 and detection["confidence"] >= 0.5:
@@ -255,6 +323,11 @@ def replay() -> int:
         if state.get("person_ahead") and action in MOVING:
             faults.append(f"step {step}: moved with a person "
                           f"{state.get('person_distance_m', '?')} m ahead")
+        rows.append({"step": step, "target": detection["target"],
+                     "distance_m": "" if distance is None else distance,
+                     "confidence": detection["confidence"],
+                     "person_ahead": bool(state.get("person_ahead")),
+                     "action": action, "forbidden": " | ".join(faults[before:])})
 
     unknowns = [h for h in history if h["detection"]["target"] == "unknown"]
     if unknowns and not any(h["action"] == "report" for h in unknowns):
@@ -267,7 +340,14 @@ def replay() -> int:
                       "moving. A refusal and a wrong action do not cost the same "
                       "when the wrong action is not stopping")
 
-    print()
+    # The faults of the whole approach, after its twelve steps.
+    for fault in faults:
+        if not any(fault in row["forbidden"] for row in rows):
+            rows.append({"step": "all", "target": "", "distance_m": "",
+                         "confidence": "", "person_ahead": "", "action": "",
+                         "forbidden": fault})
+    kept = keep("policy.csv", rows)
+    print(f"\n{kept.relative_to(HERE)} written.\n")
     if faults:
         print(f"{len(faults)} forbidden outcome(s):")
         for fault in faults:
@@ -311,13 +391,17 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--input", choices=["files", "device"], default="files")
     ap.add_argument("--set", dest="sets", action="append",
-                    choices=CONDITIONS + ["all"], help="repeatable; default all")
+                    choices=CONDITIONS + [ROBOT, "all"],
+                    help="repeatable; default all, the rendered sets")
     ap.add_argument("--task", choices=["detect", "policy"], default="detect")
     ap.add_argument("--show", action="store_true",
                     help="write your intermediate images to out/")
     ap.add_argument("--limit", type=int, help="stop after N images per condition")
+    ap.add_argument("--tag", help="added to the names of the files in results/, "
+                                  "to keep a run next to an earlier one")
     args = ap.parse_args()
 
+    still_to_do()
     if args.task == "policy":
         return replay()
     if args.input == "device":
@@ -325,6 +409,8 @@ def main() -> int:
 
     wanted = CONDITIONS if not args.sets or "all" in args.sets else args.sets
     rows = [r for r in load_labels() if r["condition"] in wanted]
+    if not rows:
+        raise SystemExit(f"no image for {', '.join(wanted)} in data/labels.csv")
     if args.limit:
         keep, seen = [], {}
         for row in rows:
@@ -339,8 +425,11 @@ def main() -> int:
     print(f"{len(rows)} images, {', '.join(wanted)} — camera "
           f"{camera['width']}x{camera['height']}, focal {camera['focal_px']:.0f} px\n")
     results, confusions, complaints = score(rows, args.show)
-    write(results, confusions)
-    report(results, confusions, complaints)
+    run = "all" if wanted == CONDITIONS else "+".join(wanted)
+    if args.tag:
+        run += "-" + "".join(c if c.isalnum() or c in "-_" else "-" for c in args.tag)
+    written = write(results, confusions, run)
+    report(results, confusions, complaints, written)
     return 0
 
 

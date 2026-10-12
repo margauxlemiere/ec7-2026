@@ -1,7 +1,8 @@
-# Lab 3 — vision. Python 3.12, native install, no container:
-#   python3 -m venv .venv && pip install -r requirements.txt
-# Every package here has a macosx_*_arm64 wheel.
-numpy
-opencv-python
-scikit-image
-scikit-learn         # for the learned option your assignment asks for
+# Lab 3 — vision. This lab adds nothing to the course environment of
+# assignment 1: numpy, opencv-python, scikit-image and scikit-learn, which is
+# all it uses, are already there. Activate that environment and run the engine.
+# See decisions/2026-09-20_un-venv-de-cours.md.
+#
+# Your assignment may need more. A pre-trained detector pulls torch, which is
+# macOS 14 minimum on Apple Silicon:
+# ultralytics

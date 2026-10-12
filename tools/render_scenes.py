@@ -36,7 +36,7 @@ DATA = HERE / "data"
 WIDTH, HEIGHT = 640, 480
 FOCAL_PX = 530.0                   # roughly a Pi camera v2 over 640 px of width
 CAMERA_HEIGHT_M = 0.18             # the camera sits low, on the robot
-SIGN_CENTRE_M = 0.30               # a sign is on a short post, the markers are not
+SIGN_CENTRE_M = 0.19               # the model sign: 225 mm tall on its post, a 70 mm disc
 
 # The two real sizes that turn an apparent size into a distance. They are
 # measured on the PDFs by `tools/prepare_assets.py`, not guessed here.
@@ -119,11 +119,9 @@ def rolled(flat: np.ndarray, height: int, width: int) -> tuple[np.ndarray, np.nd
 
 
 def sign_face(flat: np.ndarray, side: int) -> tuple[np.ndarray, np.ndarray]:
-    """A road sign glued on a white board, facing the lane: (rgb, alpha)."""
+    """A model road sign, a disc on a post, facing the lane: (rgb, alpha)."""
     im = cv2.resize(flat, (side, side), interpolation=cv2.INTER_AREA)
-    rgb, alpha = im[..., :3], im[..., 3:4]
-    board = np.full_like(rgb, 0.93)                    # the paper it is printed on
-    return rgb * alpha + board * (1 - alpha), np.ones((side, side))
+    return im[..., :3], im[..., 3]
 
 
 def yaw(rgb: np.ndarray, alpha: np.ndarray, degrees: float):
@@ -283,8 +281,12 @@ def render(assets: dict, target: str | None, condition: str,
         # Two of the sets exist to make a readable marker read *wrongly*: the
         # shadow that adds a band, the sun that takes the colour out. Both need
         # the marker to be readable in the first place, so they stay near.
-        near = 1.5 if condition in ("shadow", "mixed") else 2.5
-        distance = float(rng.uniform(0.45, near))
+        # A model sign is 70 mm wide: past 1.3 m its octagon is under 25 px.
+        if target.startswith("sign"):
+            distance = float(rng.uniform(0.30, 1.30))
+        else:
+            near = 1.5 if condition in ("shadow", "mixed") else 2.5
+            distance = float(rng.uniform(0.45, near))
         bearing = float(rng.uniform(-22, 22))
         yaw_deg = float(rng.uniform(-40, 40))
         centre_u, top, size = place(target, distance, bearing)
@@ -384,14 +386,13 @@ def main() -> int:
         writer.writeheader()
         writer.writerows(rows)
 
-    # The intrinsics are given. The real size of a target is not: it is written
-    # on the sheet you print, and going to get it is part of the work.
+    # The intrinsics are here; the real sizes of the targets are in
+    # assets/geometry.json.
     (DATA / "camera.json").write_text(json.dumps({
         "width": WIDTH, "height": HEIGHT, "focal_px": FOCAL_PX,
         "camera_height_m": CAMERA_HEIGHT_M,
-        "note": "this set is rendered, so the focal length is exact. Your own "
-                "camera is not this one: --input device needs you to measure it. "
-                "The real size of each target is on the printed sheet.",
+        "note": "this set is rendered, so the focal length is exact. The real "
+                "size of each target is in assets/geometry.json.",
     }, indent=2) + "\n", encoding="utf-8")
 
     print(f"{len(rows)} images in {DATA}, labels.csv written")

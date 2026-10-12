@@ -43,6 +43,43 @@ def crop_to_ink(im: np.ndarray) -> np.ndarray:
     return im[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
 
 
+# The model signs of the platform, measured on 18 September 2026: an outer disc
+# of 70 mm, and on the stop sign a red octagon of 57 mm across its flats, on
+# white. The printed stop sign of road-signs.pdf fills its disc with the
+# octagon, so the model one is rebuilt here.
+SIGN_MM, STOP_MM = 70.0, 57.0
+
+
+def colour_width(path: pathlib.Path, colour: str) -> float:
+    """The width of the red or blue part of a sign, as a fraction of the sign."""
+    im = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+    hsv = cv2.cvtColor(im[..., :3], cv2.COLOR_BGR2HSV)
+    h, s = hsv[..., 0], hsv[..., 1]
+    if colour == "red":
+        mask = ((h < 10) | (h > 170)) & (s > 100)
+    else:
+        mask = (h > 95) & (h < 130) & (s > 100)
+    cols = np.where(mask.any(axis=0))[0]
+    return (cols[-1] - cols[0] + 1) / im.shape[1]
+
+
+def model_stop() -> None:
+    """The red octagon at 57 mm, centred on a white disc of 70 mm."""
+    path = ASSETS / "sign-stop.png"
+    printed = Image.open(path).convert("RGBA")
+    side = printed.width
+    scale = (STOP_MM / SIGN_MM) / colour_width(path, "red")
+    inner = printed.resize((round(side * scale),) * 2, Image.LANCZOS)
+    disc = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    arr = np.zeros((side, side), np.uint8)
+    cv2.circle(arr, (side // 2, side // 2), side // 2 - 1, 255, -1, lineType=cv2.LINE_AA)
+    mask = Image.fromarray(arr)
+    disc.paste(Image.new("RGBA", (side, side), (246, 246, 244, 255)), (0, 0), mask)
+    offset = (side - inner.width) // 2
+    disc.alpha_composite(inner, (offset, offset))
+    disc.save(path)
+
+
 def main() -> int:
     src = resources()
     ASSETS.mkdir(exist_ok=True)
@@ -63,6 +100,8 @@ def main() -> int:
     for name in SIGNS:
         Image.open(src / "road-signs" / f"{name}.png").convert("RGBA").save(
             ASSETS / f"sign-{name}.png")
+    model_stop()
+    blue_mm = round(SIGN_MM * colour_width(ASSETS / "sign-up.png", "blue"), 1)
 
     # What a detector measures is the printed band, not the sheet of paper: the
     # ink stops short of the edge, and the difference is 4 % of the distance.
@@ -70,10 +109,14 @@ def main() -> int:
     (ASSETS / "geometry.json").write_text(json.dumps({
         "cylinder_ink_height_mm": height_mm,
         "cylinder_paper_height_mm": 210.0,
-        "sign_diameter_mm": 150.0,
-        "source": "markers.pdf printed on A4 landscape, road-signs.pdf on A4",
+        "sign_diameter_mm": SIGN_MM,
+        "stop_octagon_mm": STOP_MM,
+        "blue_disc_mm": blue_mm,
+        "source": "markers.pdf printed on A4 landscape; the model signs of the "
+                  "platform, measured on 18 September 2026",
         "note": "the cylinder value is the printed band, measured on the PDF at "
-                f"{dpi} dpi. Measure the one you printed before you trust it.",
+                f"{dpi} dpi. The signs: the outer disc, the red octagon across "
+                "its flats, and the blue disc of the direction signs.",
     }, indent=2) + "\n", encoding="utf-8")
 
     print(f"{len(list(ASSETS.glob('*.png')))} assets in {ASSETS}, "
