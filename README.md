@@ -1,4 +1,4 @@
-# Lab 3 — the markers and the signs, in the light you have
+# Lab 3 — the markers and the signs, in the light you have.
 
 EC7, session 3. The lab statement is assignment 3, on the course site. Fork
 this project and work in your fork.
