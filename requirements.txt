@@ -1,8 +1,11 @@
-# Lab 3 — vision. This lab adds nothing to the course environment of
-# assignment 1: numpy, opencv-python, scikit-image and scikit-learn, which is
-# all it uses, are already there. Activate that environment and run the engine.
+# Lab 3 — vision. The course environment of assignment 1 already has these
+# four packages: this file installs them again only if they are missing.
 # See decisions/2026-09-20_un-venv-de-cours.md.
-#
+numpy
+opencv-python
+scikit-image
+scikit-learn
+
 # Your assignment may need more. A pre-trained detector pulls torch, which is
 # macOS 14 minimum on Apple Silicon:
 # ultralytics

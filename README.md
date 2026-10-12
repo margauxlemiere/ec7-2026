@@ -11,7 +11,8 @@ git clone https://gitlab.emse.fr/<you>/lab-3.git
 cd lab-3
 . <your ec7>/.venv/bin/activate     # the course environment, from assignment 1
                                     # Windows: <your ec7>\.venv\Scripts\activate
-pip install -r requirements.txt     # this lab adds nothing, and says so
+python -m pip install -r requirements.txt   # numpy, OpenCV, scikit-image, scikit-learn
+python -c "import cv2"                      # no error: OpenCV is there
 python engine.py --input files --set even --show
 ```
 
