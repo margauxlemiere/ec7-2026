@@ -1,0 +1,160 @@
+{
+  "rate": 16000,
+  "wake_word": "robot three",
+  "vocabulary": [
+    "blue",
+    "box",
+    "carry",
+    "crate",
+    "forward",
+    "go",
+    "green",
+    "grey",
+    "left",
+    "make",
+    "now",
+    "pallet",
+    "red",
+    "right",
+    "robot",
+    "stop",
+    "three",
+    "turn",
+    "why"
+  ],
+  "backend": "chatterbox",
+  "snr_db_targets": [
+    30.0,
+    20.0,
+    10.0,
+    5.0,
+    0.0,
+    -5.0
+  ],
+  "snr_band_hz": [
+    300.0,
+    3400.0
+  ],
+  "beds_in_the_mix": [
+    "conveyor-belt",
+    "factory-impacts",
+    "sorting-centre",
+    "workshop-hall"
+  ],
+  "layers": [
+    "robot-motors"
+  ],
+  "speech": [
+    "continuous",
+    "words"
+  ],
+  "intonations": [
+    "order",
+    "cheerful",
+    "alarmed"
+  ],
+  "robot_voice": "kokoro",
+  "spoken_by_kokoro_instead": [
+    "words/b-crate-template"
+  ],
+  "speakers": {
+    "a": "am_michael",
+    "b": "af_heart",
+    "c": "bm_george",
+    "d": "bf_emma"
+  },
+  "orders": [
+    {
+      "text": "forward",
+      "intent": "forward",
+      "arguments": null
+    },
+    {
+      "text": "stop",
+      "intent": "stop",
+      "arguments": null
+    },
+    {
+      "text": "turn left",
+      "intent": "turn_left",
+      "arguments": null
+    },
+    {
+      "text": "turn right",
+      "intent": "turn_right",
+      "arguments": null
+    },
+    {
+      "text": "carry blue pallet",
+      "intent": "carry",
+      "arguments": "blue pallet"
+    },
+    {
+      "text": "carry red pallet",
+      "intent": "carry",
+      "arguments": "red pallet"
+    },
+    {
+      "text": "make green crate",
+      "intent": "make",
+      "arguments": "green crate"
+    },
+    {
+      "text": "make grey box",
+      "intent": "make",
+      "arguments": "grey box"
+    },
+    {
+      "text": "stop now",
+      "intent": "stop",
+      "arguments": null
+    },
+    {
+      "text": "go forward",
+      "intent": "forward",
+      "arguments": null
+    },
+    {
+      "text": "left",
+      "intent": "turn_left",
+      "arguments": null
+    },
+    {
+      "text": "right",
+      "intent": "turn_right",
+      "arguments": null
+    },
+    {
+      "text": "carry green crate",
+      "intent": "carry",
+      "arguments": "green crate"
+    },
+    {
+      "text": "make blue pallet",
+      "intent": "make",
+      "arguments": "blue pallet"
+    },
+    {
+      "text": "why",
+      "intent": "why",
+      "arguments": null
+    }
+  ],
+  "phrases": [
+    "ok",
+    "no",
+    "not understood",
+    "possible",
+    "impossible",
+    "stop",
+    "go forward",
+    "turn left",
+    "turn right"
+  ],
+  "ambiences": [
+    "conveyor-belt",
+    "factory-impacts",
+    "sorting-centre",
+    "workshop-hall"
+  ]
+}

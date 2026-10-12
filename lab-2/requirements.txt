@@ -1,0 +1,11 @@
+# Lab 2 — audio. What this lab adds to the course environment of assignment 1,
+# which already carries numpy, scipy, soundfile, sounddevice and jiwer.
+# Activate that environment first, then install this.
+# See decisions/2026-09-20_un-venv-de-cours.md.
+
+# --asr pretrained, step 4. Downloads a small model on first use.
+faster-whisper
+
+# A local neural voice for the corpus and for `--voice onboard`. Without it,
+# tools/build_corpus.py falls back to whatever the system has.
+# piper-tts
