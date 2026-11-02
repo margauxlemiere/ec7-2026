@@ -1,0 +1,22 @@
+# EC7 — common lab requirements.
+# Python 3.12. Native install, no container: python3 -m venv .venv && pip install -r requirements.txt
+# Every package below has a macosx_*_arm64 wheel (checked on PyPI, 2026-09-09),
+# except the pure-Python ones, which need no wheel of their own.
+# See decisions/2026-09-09_dispositif-tp-multiplateforme.md.
+
+numpy
+scipy
+soundfile
+sounddevice          # audio capture and playback; needs PortAudio, shipped in the wheel
+opencv-python
+scikit-image
+scikit-learn
+jiwer                # word / character error rate
+
+# Session 2 (audio) — install when the session needs it
+# faster-whisper     # pre-trained ASR, runs on CPU through ctranslate2
+# piper-tts          # local speech synthesis
+
+# Sessions 3 and 4 (vision, text) — install when the session needs it
+# torch              # macOS 14 minimum on Apple Silicon
+# ultralytics        # pre-trained detection, pulls torch
