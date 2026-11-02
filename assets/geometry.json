@@ -1,9 +1,0 @@
-{
-  "cylinder_ink_height_mm": 201.5,
-  "cylinder_paper_height_mm": 210.0,
-  "sign_diameter_mm": 70.0,
-  "stop_octagon_mm": 57.0,
-  "blue_disc_mm": 67.9,
-  "source": "markers.pdf printed on A4 landscape; the model signs of the platform, measured on 18 September 2026",
-  "note": "the cylinder value is the printed band, measured on the PDF at 150 dpi. The signs: the outer disc, the red octagon across its flats, and the blue disc of the direction signs."
-}

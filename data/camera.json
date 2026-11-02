@@ -1,7 +1,0 @@
-{
-  "width": 640,
-  "height": 480,
-  "focal_px": 530.0,
-  "camera_height_m": 0.18,
-  "note": "this set is rendered, so the focal length is exact. The real size of each target is in assets/geometry.json."
-}
