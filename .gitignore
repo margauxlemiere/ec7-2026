@@ -6,3 +6,6 @@ trace.jsonl
 # The corpus comes from the course site, as lab-2-data.zip: see README.md.
 data/
 *.zip
+out/
+results.csv
+confusions.csv
